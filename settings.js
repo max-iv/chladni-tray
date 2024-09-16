@@ -248,10 +248,10 @@ module.exports = {
          */
         tours: false,
         page: {
-            title: "mode0-rp-tray"
+            title: "chladni-tray"
         },
         header: {
-            title: "mode0-rp-tray"
+            title: "chladni-tray"
          },
     
 

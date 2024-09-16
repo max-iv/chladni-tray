@@ -1,5 +1,5 @@
 {
-  "name": "mode0-rp-try",
+  "name": "chladni",
   "version": "1.0.0",
   "description": "",
   "main": "node_modules/node-red/red.js -s ./settings.js -u ./",
