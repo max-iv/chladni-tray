@@ -135,7 +135,7 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Save tray config in Memory",
-        "func": "let tray = msg.payload;\nflow.set('tray', msg.payload);\nnode.warn(\"Received tray from database\");\ntray.watchdog.value = 0;\nlet newMsg2 = {topic:'overlay',payload:[{\"command\":\"init\",\"overlay\":flow.get('overlay')}]};\nnode.warn('Stopping readings');\nflow.set('settingInProgress', true);\n\nreturn newMsg2;\n",
+        "func": "let tray = msg.payload;\nflow.set('tray', msg.payload);\nnode.warn(\"Received tray from database\");\ntray.watchdog.value = 0;\nlet newMsg2 = {topic:'overlay',payload:[{\"command\":\"init\",\"overlay\":flow.get('overlay')}]};\nflow.set('settingInProgress', true);\n\nreturn newMsg2;\n",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -143,7 +143,7 @@
         "finalize": "",
         "libs": [],
         "x": 940,
-        "y": 460,
+        "y": 540,
         "wires": [
             [
                 "e0e078fb21bf41f0",
@@ -185,7 +185,7 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Init flow Variables",
-        "func": "var trayProps = {\n    box         :   env.get(\"BOX\"),\n    type        :   env.get(\"TRAYTYPE\"),\n    name        :   env.get(\"TRAYNAME\"),\n};\nflow.set('trayProps',trayProps);\nnode.warn('Stopping readings');\nflow.set('settingInProgress', true);\nflow.set('settingMessageCount', 0);\nflow.set('deviceInit',true);\nflow.set('tray', null);\nflow.set('overlay',env.get(\"OVERLAY\"));\nreturn {topic: \"getTrayProps\", payload: true};  \n",
+        "func": "var trayProps = {\n    box         :   env.get(\"BOX\"),\n    type        :   env.get(\"TRAYTYPE\"),\n    name        :   env.get(\"TRAYNAME\"),\n};\nflow.set('trayProps',trayProps);\nflow.set('settingInProgress', true);\nflow.set('settingMessageCount', 0);\nflow.set('deviceInit',true);\nflow.set('tray', null);\nflow.set('overlay',env.get(\"OVERLAY\"));\nreturn {topic: \"getTrayProps\", payload: true};  \n",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -297,7 +297,7 @@
         "finalize": "",
         "libs": [],
         "x": 1330,
-        "y": 360,
+        "y": 460,
         "wires": [
             [
                 "c162f36043cc2868"
@@ -309,14 +309,15 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Save config file",
-        "func": "let cubeAlarm = flow.get('tray')[msg.payload.cube].alarm;\ncubeAlarm.limits.lolo = msg.payload.limits.lolo;\ncubeAlarm.limits.low  = msg.payload.limits.low;\ncubeAlarm.limits.high = msg.payload.limits.high;\ncubeAlarm.limits.hihi = msg.payload.limits.hihi;\ncubeAlarm.notify.name = msg.payload.notify.name;\ncubeAlarm.notify.number = msg.payload.notify.number;\nreturn {topic:'newData', payload:true};",
+        "func": "let cubeAlarm = flow.get('tray')[msg.payload.cube].alarm;\nif (flow.get('tray')[msg.payload.cube].hasOwnProperty('enabled'))\n{\n    if (msg.payload.hasOwnProperty('enabled'))\n    {\n        flow.get('tray')[msg.payload.cube].enabled = msg.payload.enabled;\n    }\n}\ncubeAlarm.limits.lolo = msg.payload.limits.lolo;\ncubeAlarm.limits.low  = msg.payload.limits.low;\ncubeAlarm.limits.high = msg.payload.limits.high;\ncubeAlarm.limits.hihi = msg.payload.limits.hihi;\nreturn {topic:'newData', payload:true};\n\n",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 900,
-        "y": 420,
+        "y": 500,
         "wires": [
             [
                 "7b7acd8a92f71a95"
@@ -328,8 +329,8 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Create Setting",
-        "func": "let two31Minus1 = 2147483647;\nlet clkFreq = 125e6;\nlet blinkyBusSettingMsg = \n{\n    topic : msg.topic, \n    payload : [] \n}\nlet blinkyBusMessage = false;\nlet normalSettingMsg = null;\nlet trayControlMessage = null;\nlet tray = flow.get('tray');\nif (tray == null) return [blinkyBusSettingMsg,normalSettingMsg,trayControlMessage];\nlet setValue = 0;\nlet cosAmp = 0;\nlet sinAmp = 0;\nlet regOut01 = 0;\nlet regOut02 = 0;\nlet regOut03 = 0;\nlet regOut04 = 0;\nlet regOut07 = 0;\n\nswitch (msg.payload.cube) \n{\n    case 'reset':\n        setValue = msg.payload.value;\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":setValue,\"offset\":64});\n        blinkyBusMessage = true;\n        break;\n    case 'frequency':\n        let phase_inc = 2 * msg.payload.value / clkFreq;\n        regOut01 = Math.floor( phase_inc * two31Minus1);;\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut01,\"offset\":68});\n        blinkyBusMessage = true;\n        break;\n    case 'phase':\n        cosAmp = Math.cos(msg.payload.value * Math.PI / 180.0);\n        sinAmp = Math.sin(msg.payload.value * Math.PI / 180.0);\n        regOut03 = Math.floor(-cosAmp * two31Minus1);\n        regOut04 = Math.floor( sinAmp * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut03,\"offset\":76});\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut04,\"offset\":80});\n        blinkyBusMessage = true;\n        break;\n    case 'offsetBwD':\n        let regOut05 = Math.floor(Math.log(clkFreq / msg.payload.value) / Math.log(2));\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut05,\"offset\":84});\n        blinkyBusMessage = true;\n        tray.offsetBwA.value = clkFreq / (2**regOut05);\n        break;\n    case 'resBwD':\n        let regOut06 = Math.floor(Math.log(clkFreq / msg.payload.value) / Math.log(2));\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut06,\"offset\":88});\n        blinkyBusMessage = true;\n        tray.resBwA.value = clkFreq / (2**regOut06);\n        break;\n    case 'fbOn':\n        regOut07 = Math.floor( tray.fbGain.value * msg.payload.value * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut07,\"offset\":92});\n        blinkyBusMessage = true;\n        break;\n    case 'fbGain':\n        regOut07 = Math.floor( msg.payload.value * tray.fbOn.value * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut07,\"offset\":92});\n        blinkyBusMessage = true;\n        break;\n    case 'inputBwD':\n        let regOut08 = Math.floor(Math.log(clkFreq / msg.payload.value) / Math.log(2));\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut08,\"offset\":96});\n        blinkyBusMessage = true;\n        tray.inputBwA.value = clkFreq / (2**regOut08);\n        break;\n    case 'amplitude':\n        let regOut09 = Math.floor(msg.payload.value * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut09,\"offset\":100});\n        blinkyBusMessage = true;\n        break;\n    case 'alias':\n        tray.alias.value = msg.payload.value;\n        blinkyBusMessage = false;\n        normalSettingMsg = { topic: 'newData', payload: true };\n       break;\n    case 'trayControl':\n        blinkyBusMessage = false;\n        switch(msg.payload.value)\n        {\n            case 0:\n                tray.trayControl.value = 0;\n                node.warn('Starting readings');\n                flow.set('settingInProgress', false);\n                break;\n            case 1:\n                tray.trayControl.value = -1;\n                node.warn('Stopping readings');\n                flow.set('settingInProgress', true);\n                break;\n            case 2:\n                if (tray.trayControl.value > 0)\n                {\n                    tray.trayControl.value = 2;\n                    node.warn('Stopping readings');\n                    flow.set('settingInProgress', true);\n                    let trayProps  = flow.get('trayProps');\n                    node.warn(\"Asking for tray from database\");\n                    trayControlMessage =\n                    {\n                        topic: trayProps.box + '/tray/' + trayProps.type + '/' + trayProps.name + '/echo',\n                        payload: JSON.stringify({ topic: trayProps.box + '/tray/' + trayProps.type + '/' + trayProps.name + '/setting/echo' })\n                    };\n                }\n                break;\n            default:\n                tray.trayControl.value = 0;\n                break;\n        }\n        normalSettingMsg = { topic: 'newData', payload: true };\n       break;\n    default:\n        break;\n}\nif (blinkyBusMessage)\n{\n    tray[msg.payload.cube].value  = msg.payload.value;\n    node.warn('Stopping readings');\n    flow.set('settingInProgress', true);\n    flow.set('settingMessageCount', blinkyBusSettingMsg.payload.length);\n}\nreturn [blinkyBusSettingMsg,normalSettingMsg,trayControlMessage];\n\n\n\n/*\nlet phase_off = tray.phase.value / 180.0;\nlet phase_inc = 2 * tray.frequency.value / clkFreq;\nlet cosAmp = tray.amplitude.value * Math.cos(tray.phase.value * Math.PI / 180.0);\nlet sinAmp = tray.amplitude.value * Math.sin(tray.phase.value * Math.PI / 180.0);\nlet phaseDetLPFShift = Math.floor(Math.log(clkFreq / tray.resBwD.value) / Math.log(2));\ntray.resBwA.value = clkFreq / (2**phaseDetLPFShift);\nlet inputNotchLPFShift = Math.floor(Math.log(clkFreq / tray.offsetBwD.value) / Math.log(2));\ntray.offsetBwA.value = clkFreq / (2**inputNotchLPFShift);\n\nlet regOut01 = Math.floor( phase_inc * two31Minus1);\nlet regOut02 = Math.floor( phase_off  * two31Minus1);\nlet regOut03 = Math.floor(-cosAmp * two31Minus1);\nlet regOut04 = Math.floor( sinAmp * two31Minus1);\nlet regOut05 = inputNotchLPFShift;\nlet regOut06 = phaseDetLPFShift;\nlet regOut07 = Math.floor( tray.fbGain.value * tray.fbOn.value * two31Minus1); \n\nnode.warn(tray.resBwA.value);\nnode.warn(tray.offsetBwA.value);\n\nlet setReg = [];\n\nsetReg.push(tray.reset.value);\n\nsetReg.push(regOut01);\nsetReg.push(regOut02);\nsetReg.push(regOut03);\nsetReg.push(regOut04);\nsetReg.push(regOut05);\nsetReg.push(regOut06);\nsetReg.push(regOut07);\n*/",
-        "outputs": 3,
+        "func": "let two31Minus1 = 2147483647;\nlet clkFreq = 125e6;\nlet blinkyBusSettingMsg = \n{\n    topic : msg.topic, \n    payload : [] \n}\nlet modeMsg = null;\nlet modeSurveyMsg = null;\nlet blinkyBusMessage = false;\nlet normalSettingMsg = null;\nlet trayControlMessage = null;\nlet tray = flow.get('tray');\nif (tray == null) return [blinkyBusSettingMsg,normalSettingMsg,trayControlMessage,modeMsg, modeSurveyMsg];\nif (tray[msg.payload.cube].hasOwnProperty('enabled'))\n{\n    if (tray[msg.payload.cube].enabled == 0)\n    {\n        return [null, null, null,null];\n    }\n}\nlet setValue = 0;\nlet cosAmp = 0;\nlet sinAmp = 0;\nlet regOut01 = 0;\nlet regOut02 = 0;\nlet regOut03 = 0;\nlet regOut04 = 0;\nlet regOut07 = 0;\n\nswitch (msg.payload.cube) \n{\n    case 'reset':\n        setValue = msg.payload.value;\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":setValue,\"offset\":64});\n        blinkyBusMessage = true;\n        break;\n    case 'frequency':\n        let phase_inc = 2 * msg.payload.value / clkFreq;\n        regOut01 = Math.floor( phase_inc * two31Minus1);;\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut01,\"offset\":68});\n        blinkyBusMessage = true;\n        break;\n    case 'phase':\n        cosAmp = Math.cos(msg.payload.value * Math.PI / 180.0);\n        sinAmp = Math.sin(msg.payload.value * Math.PI / 180.0);\n        regOut03 = Math.floor(-cosAmp * two31Minus1);\n        regOut04 = Math.floor( sinAmp * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut03,\"offset\":76});\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut04,\"offset\":80});\n        blinkyBusMessage = true;\n        break;\n    case 'offsetBwD':\n        let regOut05 = Math.floor(Math.log(clkFreq / msg.payload.value) / Math.log(2));\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut05,\"offset\":84});\n        blinkyBusMessage = true;\n        tray.offsetBwA.value = clkFreq / (2**regOut05);\n        break;\n    case 'resBwD':\n        let regOut06 = Math.floor(Math.log(clkFreq / msg.payload.value) / Math.log(2));\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut06,\"offset\":88});\n        blinkyBusMessage = true;\n        tray.resBwA.value = clkFreq / (2**regOut06);\n        break;\n    case 'fbOn':\n        regOut07 = Math.floor( tray.fbGain.value * msg.payload.value * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut07,\"offset\":92});\n        blinkyBusMessage = true;\n        break;\n    case 'fbGain':\n        regOut07 = Math.floor( msg.payload.value * tray.fbOn.value * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut07,\"offset\":92});\n        blinkyBusMessage = true;\n        break;\n    case 'inputBwD':\n        let regOut08 = Math.floor(Math.log(clkFreq / msg.payload.value) / Math.log(2));\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut08,\"offset\":96});\n        blinkyBusMessage = true;\n        tray.inputBwA.value = clkFreq / (2**regOut08);\n        break;\n    case 'amplitude':\n        let regOut09 = Math.floor(msg.payload.value * two31Minus1);\n        blinkyBusSettingMsg.payload.push({\"command\":\"setting\",\"value\":regOut09,\"offset\":100});\n        blinkyBusMessage = true;\n        break;\n    case 'alias':\n        tray.alias.value = msg.payload.value;\n        blinkyBusMessage = false;\n        normalSettingMsg = { topic: 'newData', payload: true };\n       break;\n    case 'mode':\n        tray.mode.value = msg.payload.value;\n        blinkyBusMessage = false;\n        normalSettingMsg = { topic: 'newData', payload: true };\n        modeMsg = { topic: 'mode', payload: tray.mode.value }\n       break;\n    case 'modeSurvey':\n        tray.modeSurvey.value = msg.payload.value;\n        blinkyBusMessage = false;\n        normalSettingMsg = { topic: 'newData', payload: true };\n        modeSurveyMsg = { topic: 'modeSurveySetting', payload: tray.modeSurvey.value }\n       break;\n    case 'trayControl':\n        blinkyBusMessage = false;\n        switch(msg.payload.value)\n        {\n            case 0:\n                tray.trayControl.value = 0;\n                flow.set('settingInProgress', false);\n                break;\n            case 1:\n                tray.trayControl.value = -1;\n                flow.set('settingInProgress', true);\n                break;\n            case 2:\n                if (tray.trayControl.value > 0)\n                {\n                    tray.trayControl.value = 2;\n                    flow.set('settingInProgress', true);\n                    let trayProps  = flow.get('trayProps');\n                    trayControlMessage =\n                    {\n                        topic: trayProps.box + '/tray/' + trayProps.type + '/' + trayProps.name + '/echo',\n                        payload: JSON.stringify({ topic: trayProps.box + '/tray/' + trayProps.type + '/' + trayProps.name + '/setting/echo' })\n                    };\n                }\n                break;\n            default:\n                tray.trayControl.value = 0;\n                break;\n        }\n        normalSettingMsg = { topic: 'newData', payload: true };\n       break;\n    default:\n        break;\n}\nif (blinkyBusMessage)\n{\n    tray[msg.payload.cube].value  = msg.payload.value;\n    flow.set('settingInProgress', true);\n    flow.set('settingMessageCount', blinkyBusSettingMsg.payload.length);\n}\nreturn [blinkyBusSettingMsg,normalSettingMsg,trayControlMessage,modeMsg, modeSurveyMsg];\n\n\n\n",
+        "outputs": 5,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
@@ -346,6 +347,12 @@
             ],
             [
                 "5126a47142c6b136"
+            ],
+            [
+                "0e6ec67bce8228e5"
+            ],
+            [
+                "111f556b4c781724"
             ]
         ]
     },
@@ -356,6 +363,7 @@
         "name": "Request tray from Database",
         "func": "let tray = flow.get('tray');\nif (tray != null) return [null,null];\nlet trayProps  = flow.get('trayProps');\nnode.warn(\"Asking for tray from database\");\nvar newMsg =\n{\n    topic: trayProps.box + '/tray/' + trayProps.type + '/' + trayProps.name + '/echo',\n    payload: JSON.stringify({ topic: trayProps.box + '/tray/' + trayProps.type + '/' + trayProps.name + '/setting/echo' })\n};\nreturn [{ topic: \"getTrayProps\", payload: true }, newMsg];  \n",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -440,7 +448,7 @@
         "expiry": "",
         "broker": "79250bf3.365cc4",
         "x": 1510,
-        "y": 360,
+        "y": 460,
         "wires": []
     },
     {
@@ -488,7 +496,7 @@
             "36f27e06449f60aa"
         ],
         "x": 1395,
-        "y": 300,
+        "y": 400,
         "wires": [
             [
                 "c162f36043cc2868"
@@ -510,7 +518,7 @@
             "825424632004f63e"
         ],
         "x": 1215,
-        "y": 360,
+        "y": 460,
         "wires": [
             [
                 "5c76e32670100b45"
@@ -540,7 +548,7 @@
             "35592760638b8bfa"
         ],
         "x": 1115,
-        "y": 420,
+        "y": 500,
         "wires": []
     },
     {
@@ -553,7 +561,7 @@
             "35592760638b8bfa"
         ],
         "x": 1115,
-        "y": 380,
+        "y": 460,
         "wires": []
     },
     {
@@ -568,7 +576,7 @@
         "finalize": "",
         "libs": [],
         "x": 880,
-        "y": 380,
+        "y": 460,
         "wires": [
             [
                 "18a373d7c39b4076"
@@ -585,7 +593,7 @@
             "667c2c5d7f705954"
         ],
         "x": 2505,
-        "y": 600,
+        "y": 680,
         "wires": []
     },
     {
@@ -773,7 +781,8 @@
         "links": [
             "46579bc816c2e12c",
             "97d1bf83713d277e",
-            "64378c7bbd67ece6"
+            "64378c7bbd67ece6",
+            "09b74d9db6221475"
         ],
         "x": 115,
         "y": 900,
@@ -1129,7 +1138,7 @@
         "allowrate": false,
         "outputs": 1,
         "x": 1170,
-        "y": 540,
+        "y": 620,
         "wires": [
             [
                 "877e9ecebbd3a3ad",
@@ -1147,7 +1156,7 @@
             "fe87f8d4f4d7e0b1"
         ],
         "x": 2075,
-        "y": 520,
+        "y": 600,
         "wires": []
     },
     {
@@ -1168,7 +1177,7 @@
         "allowrate": false,
         "outputs": 1,
         "x": 1300,
-        "y": 600,
+        "y": 680,
         "wires": [
             [
                 "335d71f2571c9da2"
@@ -1180,7 +1189,7 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "initSettings",
-        "func": "let tray = flow.get('tray');\nlet settingsArray = [];\nlet two31Minus1 = 2147483647;\nlet clkFreq = 125e6;\n\ntray.reset.value = 1;\nlet phase_off = tray.phase.value / 180.0;\nlet phase_inc = 2 * tray.frequency.value / clkFreq;\nlet cosAmp = Math.cos(tray.phase.value * Math.PI / 180.0);\nlet sinAmp = Math.sin(tray.phase.value * Math.PI / 180.0);\nlet phaseDetLPFShift = Math.floor(Math.log(clkFreq / tray.resBwD.value) / Math.log(2));\ntray.resBwA.value = clkFreq / (2**phaseDetLPFShift);\nlet inputNotchLPFShift = Math.floor(Math.log(clkFreq / tray.offsetBwD.value) / Math.log(2));\ntray.offsetBwA.value = clkFreq / (2**inputNotchLPFShift);\nlet inputLPFShift = Math.floor(Math.log(clkFreq / tray.inputBwD.value) / Math.log(2));\ntray.inputBwA.value = clkFreq / (2**inputLPFShift);\n\nlet regOut01 = Math.floor( phase_inc * two31Minus1);\nlet regOut02 = Math.floor( phase_off  * two31Minus1);\nlet regOut03 = Math.floor(-cosAmp * two31Minus1);\nlet regOut04 = Math.floor( sinAmp * two31Minus1);\nlet regOut05 = inputNotchLPFShift;\nlet regOut06 = phaseDetLPFShift;\nlet regOut07 = Math.floor( tray.fbGain.value * tray.fbOn.value * two31Minus1); \nlet regOut08 = inputLPFShift;\nlet regOut09 = Math.floor(tray.amplitude.value * two31Minus1);\n\nlet setReg = [];\n\nsetReg.push(tray.reset.value);\n\nsetReg.push(regOut01);\nsetReg.push(regOut02);\nsetReg.push(regOut03);\nsetReg.push(regOut04);\nsetReg.push(regOut05);\nsetReg.push(regOut06);\nsetReg.push(regOut07);\nsetReg.push(regOut08);\nsetReg.push(regOut09);\n\nfor (let ii = 0; ii < setReg.length; ++ii)\n{\n    settingsArray.push({\"command\":\"setting\",\"value\":setReg[ii],\"offset\":(64 + ii * 4)});\n}\ntray.reset.value = 0;\nsettingsArray.push({\"command\":\"setting\",\"value\":tray.reset.value,\"offset\":64});\nflow.set('settingMessageCount', settingsArray.length);\n\nreturn {topic:\"initSettings\",payload:settingsArray};\n\n",
+        "func": "let tray = flow.get('tray');\nlet settingsArray = [];\nlet two31Minus1 = 2147483647;\nlet clkFreq = 125e6;\ntray.amplitude.value = 0;\n\ntray.reset.value = 1;\nlet phase_off = tray.phase.value / 180.0;\nlet phase_inc = 2 * tray.frequency.value / clkFreq;\nlet cosAmp = Math.cos(tray.phase.value * Math.PI / 180.0);\nlet sinAmp = Math.sin(tray.phase.value * Math.PI / 180.0);\nlet phaseDetLPFShift = Math.floor(Math.log(clkFreq / tray.resBwD.value) / Math.log(2));\ntray.resBwA.value = clkFreq / (2**phaseDetLPFShift);\nlet inputNotchLPFShift = Math.floor(Math.log(clkFreq / tray.offsetBwD.value) / Math.log(2));\ntray.offsetBwA.value = clkFreq / (2**inputNotchLPFShift);\nlet inputLPFShift = Math.floor(Math.log(clkFreq / tray.inputBwD.value) / Math.log(2));\ntray.inputBwA.value = clkFreq / (2**inputLPFShift);\n\nlet regOut01 = Math.floor( phase_inc * two31Minus1);\nlet regOut02 = Math.floor( phase_off  * two31Minus1);\nlet regOut03 = Math.floor(-cosAmp * two31Minus1);\nlet regOut04 = Math.floor( sinAmp * two31Minus1);\nlet regOut05 = inputNotchLPFShift;\nlet regOut06 = phaseDetLPFShift;\nlet regOut07 = Math.floor( tray.fbGain.value * tray.fbOn.value * two31Minus1); \nlet regOut08 = inputLPFShift;\nlet regOut09 = Math.floor(tray.amplitude.value * two31Minus1);\n\nlet setReg = [];\n\nsetReg.push(tray.reset.value);\n\nsetReg.push(regOut01);\nsetReg.push(regOut02);\nsetReg.push(regOut03);\nsetReg.push(regOut04);\nsetReg.push(regOut05);\nsetReg.push(regOut06);\nsetReg.push(regOut07);\nsetReg.push(regOut08);\nsetReg.push(regOut09);\n\nfor (let ii = 0; ii < setReg.length; ++ii)\n{\n    settingsArray.push({\"command\":\"setting\",\"value\":setReg[ii],\"offset\":(64 + ii * 4)});\n}\ntray.reset.value = 0;\nsettingsArray.push({\"command\":\"setting\",\"value\":tray.reset.value,\"offset\":64});\nflow.set('settingMessageCount', settingsArray.length);\n\nreturn {topic:\"initSettings\",payload:settingsArray};\n\n",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1188,7 +1197,7 @@
         "finalize": "",
         "libs": [],
         "x": 1450,
-        "y": 600,
+        "y": 680,
         "wires": [
             [
                 "9c389318e2c2e80b"
@@ -1207,7 +1216,7 @@
         "stream": false,
         "addname": "",
         "x": 1600,
-        "y": 540,
+        "y": 620,
         "wires": [
             [
                 "727d4270b96e9f62"
@@ -1219,7 +1228,7 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Dec Setting Count",
-        "func": "flow.set('settingMessageCount', flow.get('settingMessageCount') - 1);\nnode.warn( flow.get('settingMessageCount'));\nlet endMsg = null;\nif (flow.get('settingMessageCount') < 1) endMsg = {topic:'lastSetting', payload:true};\nreturn [msg,endMsg];",
+        "func": "flow.set('settingMessageCount', flow.get('settingMessageCount') - 1);\nlet endMsg = null;\nif (flow.get('settingMessageCount') < 1) endMsg = {topic:'lastSetting', payload:true};\nreturn [msg,endMsg];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -1227,7 +1236,7 @@
         "finalize": "",
         "libs": [],
         "x": 1930,
-        "y": 540,
+        "y": 620,
         "wires": [
             [
                 "64378c7bbd67ece6"
@@ -1255,7 +1264,7 @@
         "allowrate": false,
         "outputs": 1,
         "x": 2150,
-        "y": 600,
+        "y": 680,
         "wires": [
             [
                 "fefa50cae29305a5"
@@ -1267,7 +1276,7 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Resume Readings",
-        "func": "let tray = flow.get('tray');\nnode.warn('Starting readings');\nflow.set('settingInProgress', false);\ntray.trayControl.value = 0;\nlet newMsg1 = {topic: 'setting', payload:{'cube':'trayControl', value:tray.trayControl.value}};\nreturn newMsg1;",
+        "func": "let tray = flow.get('tray');\nflow.set('settingInProgress', false);\ntray.trayControl.value = 0;\nlet newMsg1 = {topic: 'setting', payload:{'cube':'trayControl', value:tray.trayControl.value}};\nreturn newMsg1;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1275,7 +1284,7 @@
         "finalize": "",
         "libs": [],
         "x": 2370,
-        "y": 600,
+        "y": 680,
         "wires": [
             [
                 "3cbcb621cb818ee0"
@@ -1312,8 +1321,9 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Dec Setting Count",
-        "func": "flow.set('settingMessageCount', flow.get('settingMessageCount') - 1);\nnode.warn( flow.get('settingMessageCount'));\nlet endMsg = null;\nif (flow.get('settingMessageCount') < 1) endMsg = {topic:'lastSetting', payload:true};\nreturn [msg,endMsg];",
+        "func": "flow.set('settingMessageCount', flow.get('settingMessageCount') - 1);\nlet endMsg = null;\nif (flow.get('settingMessageCount') < 1) endMsg = {topic:'lastSetting', payload:true};\nreturn [msg,endMsg];",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -1359,8 +1369,9 @@
         "type": "function",
         "z": "4a5a8ec8ddc999ab",
         "name": "Resume Readings",
-        "func": "node.warn('Starting readings');\nflow.set('settingInProgress', false);\nreturn null;",
+        "func": "flow.set('settingInProgress', false);\nreturn null;",
         "outputs": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -1382,7 +1393,7 @@
         "finalize": "",
         "libs": [],
         "x": 1410,
-        "y": 540,
+        "y": 620,
         "wires": [
             [
                 "9c389318e2c2e80b"
@@ -1399,111 +1410,8 @@
             "2f895b2de68c4ada"
         ],
         "x": 1115,
-        "y": 460,
+        "y": 540,
         "wires": []
-    },
-    {
-        "id": "4e7d50b6cf980c8d",
-        "type": "debug",
-        "z": "4a5a8ec8ddc999ab",
-        "name": "debug 1",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 200,
-        "y": 960,
-        "wires": []
-    },
-    {
-        "id": "3c096a25035a6964",
-        "type": "debug",
-        "z": "4a5a8ec8ddc999ab",
-        "name": "debug 2",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 960,
-        "wires": []
-    },
-    {
-        "id": "052ff3844f8fb971",
-        "type": "delay",
-        "z": "4a5a8ec8ddc999ab",
-        "name": "",
-        "pauseType": "rate",
-        "timeout": "5",
-        "timeoutUnits": "seconds",
-        "rate": "1",
-        "nbRateUnits": "0.3",
-        "rateUnits": "second",
-        "randomFirst": "1",
-        "randomLast": "5",
-        "randomUnits": "seconds",
-        "drop": false,
-        "allowrate": false,
-        "outputs": 1,
-        "x": 1748,
-        "y": 655,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "39085206d9973fea",
-        "type": "delay",
-        "z": "4a5a8ec8ddc999ab",
-        "name": "",
-        "pauseType": "rate",
-        "timeout": "2",
-        "timeoutUnits": "seconds",
-        "rate": "1",
-        "nbRateUnits": "1",
-        "rateUnits": "second",
-        "randomFirst": "1",
-        "randomLast": "5",
-        "randomUnits": "seconds",
-        "drop": true,
-        "allowrate": false,
-        "outputs": 1,
-        "x": 1367,
-        "y": 782,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "c4318b8d70a03d00",
-        "type": "delay",
-        "z": "4a5a8ec8ddc999ab",
-        "name": "",
-        "pauseType": "rate",
-        "timeout": "5",
-        "timeoutUnits": "seconds",
-        "rate": "1",
-        "nbRateUnits": "0.3",
-        "rateUnits": "second",
-        "randomFirst": "1",
-        "randomLast": "5",
-        "randomUnits": "seconds",
-        "drop": false,
-        "allowrate": false,
-        "outputs": 1,
-        "x": 1510,
-        "y": 160,
-        "wires": [
-            []
-        ]
     },
     {
         "id": "177235eb42188efc",
@@ -1529,5 +1437,294 @@
                 "97d1bf83713d277e"
             ]
         ]
+    },
+    {
+        "id": "a464172e497889a3",
+        "type": "inject",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "mode",
+        "payload": "1",
+        "payloadType": "num",
+        "x": 1230,
+        "y": 1140,
+        "wires": [
+            [
+                "c1b7ce547df18222"
+            ]
+        ]
+    },
+    {
+        "id": "c1b7ce547df18222",
+        "type": "function",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Set Mode Pulse",
+        "func": "let tray = flow.get('tray');\nlet imode = Math.floor(msg.payload);\nif (imode < 0) return null;\nif (imode >= tray.modes.value.length) return null;\n\nlet two31Minus1 = 2147483647;\nlet clkFreq = 125e6;\nlet msgArray = [];\n\nlet mode = tray.modes.value[imode];\n\ntray.amplitude.value = 0;\nlet regOut09 = Math.floor(tray.amplitude.value * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut09,\"offset\":100});\n\ntray.fbOn.value = 0;\nlet regOut07 = Math.floor( tray.fbGain.value * tray.fbOn.value * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut07,\"offset\":92});\n\ntray.frequency.value = mode.freq;\nlet phase_inc = 2 * tray.frequency.value / clkFreq;\nlet regOut01 = Math.floor( phase_inc * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut01,\"offset\":68});\n\ntray.phase.value = mode.phase;\nlet cosAmp = Math.cos(tray.phase.value * Math.PI / 180.0);\nlet sinAmp = Math.sin(tray.phase.value * Math.PI / 180.0);\nlet regOut03 = Math.floor(-cosAmp * two31Minus1);\nlet regOut04 = Math.floor( sinAmp * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut03,\"offset\":76});\nmsgArray.push({\"command\":\"setting\",\"value\":regOut04,\"offset\":80});\n\ntray.amplitude.value = 0.1;\nregOut09 = Math.floor(tray.amplitude.value * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut09,\"offset\":100});\n\ntray.fbOn.value = 1;\nregOut07 = Math.floor( tray.fbGain.value * tray.fbOn.value * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut07,\"offset\":92});\n\ntray.amplitude.value = mode.amplitude;\nregOut09 = Math.floor(tray.amplitude.value * two31Minus1);\nmsgArray.push({\"command\":\"setting\",\"value\":regOut09,\"offset\":100});\n\nlet msgDelay = 300;\nlet numberPolls = Math.ceil(mode.duration * 1000 / msgDelay / 3);\nif (numberPolls < 1) numberPolls = 1;\nfor (let ii = 0; ii < numberPolls; ++ii)\n{\n    for (let ii = 0; ii < 3; ++ii)\n    {\n        msgArray.push({\"command\":\"reading\",\"offset\":(ii * 4)});\n    }\n}\nmsgArray.push({\"command\":\"setting\",\"value\":0,\"offset\":100}); //turn off amplitude\nmsgArray.push({\"command\":\"setting\",\"value\":0,\"offset\":92});  // turn off feedback\n\nflow.set('settingInProgress', true);\ntray.mode.enabled = 0;\nreturn {topic:msg.topic,payload:msgArray,rate:msgDelay};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1400,
+        "y": 1100,
+        "wires": [
+            [
+                "ef4c470eafeb7364"
+            ]
+        ]
+    },
+    {
+        "id": "ef4c470eafeb7364",
+        "type": "delay",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Delay Poll Interval",
+        "pauseType": "delay",
+        "timeout": "$(POLLINTERVAL)",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1610,
+        "y": 1100,
+        "wires": [
+            [
+                "26840c33828ab982"
+            ]
+        ]
+    },
+    {
+        "id": "26840c33828ab982",
+        "type": "split",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 1770,
+        "y": 1100,
+        "wires": [
+            [
+                "678e76c15b83260b"
+            ]
+        ]
+    },
+    {
+        "id": "678e76c15b83260b",
+        "type": "delay",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Rate Limit",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "0.3",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1920,
+        "y": 1100,
+        "wires": [
+            [
+                "09b74d9db6221475",
+                "b84a896cdcb24769"
+            ]
+        ]
+    },
+    {
+        "id": "09b74d9db6221475",
+        "type": "link out",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "ModePulse out",
+        "mode": "link",
+        "links": [
+            "fe87f8d4f4d7e0b1"
+        ],
+        "x": 2055,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "b84a896cdcb24769",
+        "type": "function",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Check for mode pulse end",
+        "func": "if (msg.parts.index < (msg.parts.count - 1)) return null;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2130,
+        "y": 1120,
+        "wires": [
+            [
+                "66b0ecb2731a19f0"
+            ]
+        ]
+    },
+    {
+        "id": "66b0ecb2731a19f0",
+        "type": "delay",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Delay Poll Interval",
+        "pauseType": "delay",
+        "timeout": "$(POLLINTERVAL)",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 2390,
+        "y": 1120,
+        "wires": [
+            [
+                "4d463625d0632bbc"
+            ]
+        ]
+    },
+    {
+        "id": "4d463625d0632bbc",
+        "type": "function",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Resume Readings",
+        "func": "let tray = flow.get('tray');\nlet lastMode = tray.mode.value;\ntray.mode.enabled = 1;\ntray.mode.value = -1;\ntray.amplitude.value = 0;\ntray.fbOn.value = 0;\nflow.set('settingInProgress', false);\nreturn {topic:\"lastMode\", payload:lastMode};",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2610,
+        "y": 1120,
+        "wires": [
+            [
+                "de736a0a310e4fa6"
+            ]
+        ]
+    },
+    {
+        "id": "0e6ec67bce8228e5",
+        "type": "link out",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "modePulse Set Out",
+        "mode": "link",
+        "links": [
+            "d74c91cf456298e6"
+        ],
+        "x": 1115,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "d74c91cf456298e6",
+        "type": "link in",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "modePulse Set In",
+        "links": [
+            "0e6ec67bce8228e5"
+        ],
+        "x": 1255,
+        "y": 1060,
+        "wires": [
+            [
+                "c1b7ce547df18222"
+            ]
+        ]
+    },
+    {
+        "id": "111f556b4c781724",
+        "type": "link out",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "modeSurveySetting out",
+        "mode": "link",
+        "links": [
+            "5691b0ae2f31191f"
+        ],
+        "x": 1115,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "5691b0ae2f31191f",
+        "type": "link in",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "modeSurveySetting In",
+        "links": [
+            "111f556b4c781724",
+            "de736a0a310e4fa6"
+        ],
+        "x": 1275,
+        "y": 1240,
+        "wires": [
+            [
+                "a8b6c4ac5d7e68db"
+            ]
+        ]
+    },
+    {
+        "id": "a8b6c4ac5d7e68db",
+        "type": "function",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "Setup Mode Survey loop",
+        "func": "let tray = flow.get('tray');\nlet playedModeArray = context.get(\"playedModeArray\");\nlet rampSign = context.get(\"rampSign\");\nif (msg.topic == \"modeSurveySetting\")\n{\n    if (msg.payload == 1) rampSign =  1;\n    if (msg.payload == 2) rampSign = -1;\n    context.set(\"rampSign\",rampSign);\n\n    if (tray.mode.value >= 0) return null;\n    if (msg.payload == 1)\n    {\n        tray.mode.value = 0;\n        return { topic: 'mode', payload: tray.mode.value };\n    }\n    if (msg.payload == 2)\n    {\n        tray.mode.value = tray.modes.value.length - 1;\n        return { topic: 'mode', payload: tray.mode.value };\n    }\n    if (msg.payload == 3)\n    {\n        tray.mode.value = getRndInteger(0, tray.modes.value.length);\n        let indy = 0;\n        while (indy >= 0)\n        {\n            indy = playedModeArray.indexOf(tray.mode.value);\n            if (indy >= 0 ) tray.mode.value = getRndInteger(0, tray.modes.value.length);\n        }\n        playedModeArray.push(tray.mode.value);\n        if (playedModeArray.length == tray.modes.value.length)\n        {\n            playedModeArray = [];\n            playedModeArray.push(tray.mode.value);\n        }\n        context.set(\"playedModeArray\", playedModeArray);\n        return { topic: 'mode', payload: tray.mode.value };\n    }\n}\nif (msg.topic == \"lastMode\")\n{\n   if ((tray.modeSurvey.value == 1) || (tray.modeSurvey.value == 2))\n    {\n        tray.mode.value = msg.payload + rampSign;\n        if (tray.mode.value >= tray.modes.value.length) \n        {\n            tray.mode.value = tray.modes.value.length - 2;\n            rampSign = -rampSign;\n            context.set(\"rampSign\", rampSign) ;\n            tray.modeSurvey.value = 2;\n        }\n        if (tray.mode.value < 0) \n        {\n            tray.mode.value = 1;\n            rampSign = -rampSign;\n            context.set(\"rampSign\", rampSign) ;\n            tray.modeSurvey.value = 1;\n        }\n        return { topic: 'mode', payload: tray.mode.value };\n    }\n    if (tray.modeSurvey.value == 3)\n    {\n        tray.mode.value = getRndInteger(0, tray.modes.value.length);\n        let indy = 0;\n        while (indy >= 0)\n        {\n            indy = playedModeArray.indexOf(tray.mode.value);\n            if (indy >= 0 ) tray.mode.value = getRndInteger(0, tray.modes.value.length);\n        }\n        playedModeArray.push(tray.mode.value);\n        if (playedModeArray.length == tray.modes.value.length)\n        {\n            playedModeArray = [];\n            playedModeArray.push(tray.mode.value);\n        }\n        context.set(\"playedModeArray\", playedModeArray);\n        node.warn(playedModeArray);\n        return { topic: 'mode', payload: tray.mode.value };\n    }\n}\nreturn null;\n\n// Min include, max excluded\nfunction getRndInteger(min, max) \n{\n  return Math.floor(Math.random() * (max - min) ) + min;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\ncontext.set(\"playedModeArray\", []);\ncontext.set(\"rampSign\", 1);",
+        "finalize": "",
+        "libs": [],
+        "x": 1430,
+        "y": 1240,
+        "wires": [
+            [
+                "c1b7ce547df18222"
+            ]
+        ]
+    },
+    {
+        "id": "de736a0a310e4fa6",
+        "type": "link out",
+        "z": "4a5a8ec8ddc999ab",
+        "name": "modeCompleted Out",
+        "mode": "link",
+        "links": [
+            "5691b0ae2f31191f"
+        ],
+        "x": 2745,
+        "y": 1120,
+        "wires": []
     }
 ]
