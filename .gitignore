@@ -20,4 +20,4 @@ node_modules
 .flows.json.backup
 sds_trace_data.dat
 .sessions.json
-
+envMax4
