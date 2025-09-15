@@ -5,9 +5,9 @@ import struct
 import numpy as np
 
 def writeSetting(setting):
-    ol.reg_bank_0.write(value=setting["value"], offset=setting["offset"])
+    ol.signalProcess.regBank.write(value=setting["value"], offset=setting["offset"])
 def getReading(reading):
-    value = ol.reg_bank_0.read(offset=reading["offset"])
+    value = ol.signalProcess.regBank.read(offset=reading["offset"])
     readingString = '{"command":"reading","offset":'+ str(reading["offset"]) + ',"value":' + str(value) + '}'
     print(readingString)
 
