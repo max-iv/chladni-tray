@@ -21,3 +21,4 @@ node_modules
 sds_trace_data.dat
 .sessions.json
 envMax4
+envBLMC
